@@ -3,6 +3,9 @@ from typing import Any, List, Dict, Union
 import jsonpickle
 
 from datamodel import Listing, Observation, Order, OrderDepth, ProsperityEncoder, Symbol, Trade, TradingState
+#from logger import Logger
+
+#logging = Logger()
 
 class Trader:
     def calculate_orders(self, product: str, order_depth: OrderDepth, current_position: int, 
@@ -12,7 +15,7 @@ class Trader:
         # calculate available capacity
         buy_capacity = position_limit - current_position  # how many more we can buy
         sell_capacity = position_limit + current_position  # how many more we can sell
-        volume = 1
+        volume = 6
 
         # BUY logic
         if order_depth.sell_orders:
@@ -97,5 +100,5 @@ class Trader:
         }
         
         trader_data_serialized = jsonpickle.encode(trader_data)
-        
+        #logging.flush(state, result, conversions, trader_data_serialized)
         return result, conversions, trader_data_serialized

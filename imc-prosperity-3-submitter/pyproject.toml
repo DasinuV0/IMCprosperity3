@@ -1,0 +1,54 @@
+[project]
+name = "prosperity3submit"
+description = "Command-line submitter for IMC Prosperity 3 algorithms"
+version = "0.0.0"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [{name = "Jasper van Merle", email = "jaspervmerle@gmail.com"}]
+keywords = ["imc", "prosperity", "submit", "submitter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">= 3.9"
+dependencies = [
+    "keyring>=25.6.0",
+    "prosperity3bt>=0.2.0",
+    "requests>=2.32.3",
+    "requests-toolbelt>=1.0.0",
+    "typer>=0.15.2",
+]
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+prosperity3submit = "prosperity3submit.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/jmerle/imc-prosperity-3-submitter"
+Issues = "https://github.com/jmerle/imc-prosperity-3-submitter/issues"
+Changelog = "https://github.com/jmerle/imc-prosperity-3-submitter/releases"
+
+[tool.setuptools.packages.find]
+include = ["prosperity3submit", "prosperity3submit.*"]
+
+[tool.uv]
+dev-dependencies = [
+    "mypy>=1.15.0",
+    "ruff>=0.9.7",
+    "types-requests>=2.32.0.20250301",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.mypy]
+ignore_missing_imports = true

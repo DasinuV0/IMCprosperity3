@@ -35,10 +35,10 @@ PARAMS = {
     },
     Product.KELP: {  # added KELP with similar settings as SQUID_INK
         "take_width": 0,
-        "clear_width": 0,
+        "clear_width": 3,
         "prevent_adverse": True,
-        "adverse_volume": 18,
-        "reversion_beta": 0.0,
+        "adverse_volume": 7,
+        "reversion_beta": -0.013345322097751078,
         "disregard_edge": 1,
         "join_edge": 0,
         "default_edge": 1,

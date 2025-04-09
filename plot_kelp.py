@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("trading_data.csv", sep=';')
+df = pd.read_csv("trading1.csv", sep=';')
 resin_df = df[df['product'] == 'KELP'].copy()
 
 # Force numeric type

@@ -24,11 +24,11 @@ PARAMS = {
         "soft_position_limit": 10,
     },
     Product.SQUID_INK: {
-        "take_width": 2,
-        "clear_width": 0,
+        "take_width": 0,
+        "clear_width": 3,
         "prevent_adverse": True,
-        "adverse_volume": 23,
-        "reversion_beta": -0.612710524003125,
+        "adverse_volume": 17,
+        "reversion_beta": -0.045568426140976004,
         "disregard_edge": 1,
         "join_edge": 0,
         "default_edge": 1,
@@ -413,7 +413,7 @@ class Trader:
                 resin_take_orders + resin_clear_orders + resin_make_orders
             )
 
-        if Product.SQUID_INK in self.params and Product.SQUID_INK in state.order_depths:
+        if Product.SQUID_INK in self.params and Product.SQUID_INK in state.order_depths and False:
             squid_ink_position = (
                 state.position[Product.SQUID_INK]
                 if Product.SQUID_INK in state.position

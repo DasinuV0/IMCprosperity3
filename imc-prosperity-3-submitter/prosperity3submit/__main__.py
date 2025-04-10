@@ -25,9 +25,14 @@ def cli(
     
     
     reversion_beta: Annotated[Optional[float], Option("--reversion_beta", help="Custom reversion beta value.")] = -0.529,
-    take_width: Annotated[Optional[int], Option("--take_width", help="Custom take width value.")] = 1,
-    clear_width: Annotated[Optional[int], Option("--clear_width", help="Custom clear width value.")] = 0,
+    take_width: Annotated[Optional[float], Option("--take_width", help="Custom take width value.")] = 1,
+    clear_width: Annotated[Optional[float], Option("--clear_width", help="Custom clear width value.")] = 0,
     adverse_volume: Annotated[Optional[int], Option("--adverse_volume", help="Custom adverse volume.")] = 15,
+    disregard_edge: Annotated[Optional[float], Option("--disregard_edge", help="Custom adverse volume.")] = 15,
+    join_edge: Annotated[Optional[float], Option("--join_edge", help="Custom adverse volume.")] = 15,
+    default_edge: Annotated[Optional[float], Option("--default_edge", help="Custom adverse volume.")] = 15,
+    z_rolling_window: Annotated[Optional[int], Option("--z_rolling_window", help="Custom adverse volume.")] = 15,
+    zscore_threshold: Annotated[Optional[float], Option("--zscore_threshold", help="Custom adverse volume.")] = 15,
 
     out: Annotated[Optional[str], Option(help="File to save submission logs to (defaults to submissions/<timestamp>.log).", show_default=False, dir_okay=False, resolve_path=True)] = None,
     no_out: Annotated[bool, Option("--no-out", help="Don't download logs when done.")] = False,
@@ -44,6 +49,11 @@ def cli(
     content = re.sub(r'clear_width_to_be_changed',str(clear_width), content)
     content = re.sub(r'adverse_volume_to_be_changed',str(adverse_volume), content)
     content = re.sub(r'reversion_beta_to_be_changed',str(reversion_beta), content)
+    content = re.sub(r'disregard_edge_to_be_changed',str(disregard_edge), content)
+    content = re.sub(r'join_edge_to_be_changed',str(join_edge), content)
+    content = re.sub(r'default_edge_to_be_changed',str(default_edge), content)
+    content = re.sub(r'z_rolling_window_to_be_changed',str(z_rolling_window), content)
+    content = re.sub(r'zscore_threshold_to_be_changed',str(zscore_threshold), content)
 
     # Change parameters
     with open(algorithm, 'w') as file:

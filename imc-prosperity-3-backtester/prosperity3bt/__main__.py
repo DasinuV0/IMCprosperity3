@@ -227,10 +227,17 @@ def cli(
     days: Annotated[list[str], Argument(help="The days to backtest on. <round>-<day> for a single day, <round> for all days in a round.", show_default=False)],
     
     reversion_beta: Annotated[Optional[float], Option("--reversion_beta", help="Custom reversion beta value.")] = -0.529,
-    take_width: Annotated[Optional[int], Option("--take_width", help="Custom take width value.")] = 1,
-    clear_width: Annotated[Optional[int], Option("--clear_width", help="Custom clear width value.")] = 0,
+    take_width: Annotated[Optional[float], Option("--take_width", help="Custom take width value.")] = 1,
+    clear_width: Annotated[Optional[float], Option("--clear_width", help="Custom clear width value.")] = 0,
     adverse_volume: Annotated[Optional[int], Option("--adverse_volume", help="Custom adverse volume.")] = 15,
     
+    disregard_edge: Annotated[Optional[float], Option("--disregard_edge", help="Custom adverse volume.")] = 15,
+    join_edge: Annotated[Optional[float], Option("--join_edge", help="Custom adverse volume.")] = 15,
+    default_edge: Annotated[Optional[float], Option("--default_edge", help="Custom adverse volume.")] = 15,
+    
+    z_rolling_window: Annotated[Optional[int], Option("--z_rolling_window", help="Custom adverse volume.")] = 15,
+    zscore_threshold: Annotated[Optional[float], Option("--zscore_threshold", help="Custom adverse volume.")] = 15,
+
     merge_pnl: Annotated[bool, Option("--merge-pnl", help="Merge profit and loss across days.")] = False,
     vis: Annotated[bool, Option("--vis", help="Open backtest results in https://jmerle.github.io/imc-prosperity-3-visualizer/ when done.")] = False,
     out: Annotated[Optional[Path], Option(help="File to save output log to (defaults to backtests/<timestamp>.log).", show_default=False, dir_okay=False, resolve_path=True)] = None,
@@ -250,6 +257,11 @@ def cli(
     PARAMS[Product.SQUID_INK]["take_width"] = take_width
     PARAMS[Product.SQUID_INK]["clear_width"] = clear_width
     PARAMS[Product.SQUID_INK]["adverse_volume"] = adverse_volume
+    PARAMS[Product.SQUID_INK]["disregard_edge"] = disregard_edge
+    PARAMS[Product.SQUID_INK]["join_edge"] = join_edge
+    PARAMS[Product.SQUID_INK]["default_edge"] = default_edge
+    PARAMS[Product.SQUID_INK]["z_rolling_window"] = z_rolling_window
+    PARAMS[Product.SQUID_INK]["zscore_threshold"] = zscore_threshold
 
     try:
         trader_module = parse_algorithm(algorithm)

@@ -24,24 +24,27 @@ PARAMS = {
         "soft_position_limit": 10,
     },
     Product.SQUID_INK: {
-        "take_width": 1,
-        "clear_width": 0,
-        "prevent_adverse": True,
-        "adverse_volume": 15,
-        "reversion_beta": -0.129,
-        "disregard_edge": 1,
-        "join_edge": 0,
-        "default_edge": 1,
-    },
-    Product.KELP: {  # added KELP with similar settings as SQUID_INK
         "take_width": take_width_to_be_changed,
         "clear_width": clear_width_to_be_changed,
         "prevent_adverse": True,
         "adverse_volume": adverse_volume_to_be_changed,
         "reversion_beta": reversion_beta_to_be_changed,
-        "disregard_edge": 1,
-        "join_edge": 0,
-        "default_edge": 1,
+        "disregard_edge": disregard_edge_to_be_changed,
+        "join_edge": join_edge_to_be_changed,
+        "default_edge": default_edge_to_be_changed,
+
+        "z_rolling_window": z_rolling_window_to_be_changed,     # number of ticks to consider for the rolling average
+        "zscore_threshold": zscore_threshold_to_be_changed,  # threshold for taking advantage of large swings
+    },
+    Product.KELP: {  # added KELP with similar settings as SQUID_INK
+        "take_width": 3.0,
+        "clear_width": 0.0,
+        "prevent_adverse": True,
+        "adverse_volume": 7,
+        "reversion_beta": -0.231709901360756,
+        "disregard_edge": 4.0,
+        "join_edge": -1.8535170129297578,
+        "default_edge": 1.0,
     },
 }
 
@@ -177,36 +180,49 @@ class Trader:
             best_ask = min(order_depth.sell_orders.keys())
             best_bid = max(order_depth.buy_orders.keys())
             filtered_ask = [
-                price
-                for price in order_depth.sell_orders.keys()
-                if abs(order_depth.sell_orders[price])
-                >= self.params[Product.SQUID_INK]["adverse_volume"]
+                price for price in order_depth.sell_orders.keys()
+                if abs(order_depth.sell_orders[price]) >= self.params[Product.SQUID_INK]["adverse_volume"]
             ]
             filtered_bid = [
-                price
-                for price in order_depth.buy_orders.keys()
-                if abs(order_depth.buy_orders[price])
-                >= self.params[Product.SQUID_INK]["adverse_volume"]
+                price for price in order_depth.buy_orders.keys()
+                if abs(order_depth.buy_orders[price]) >= self.params[Product.SQUID_INK]["adverse_volume"]
             ]
-            mm_ask = min(filtered_ask) if len(filtered_ask) > 0 else None
-            mm_bid = max(filtered_bid) if len(filtered_bid) > 0 else None
-            if mm_ask == None or mm_bid == None:
-                if traderObject.get("squid_ink_last_price", None) == None:
-                    mmmid_price = (best_ask + best_bid) / 2
-                else:
-                    mmmid_price = traderObject["squid_ink_last_price"]
+            mm_ask = min(filtered_ask) if filtered_ask else None
+            mm_bid = max(filtered_bid) if filtered_bid else None
+            if mm_ask is None or mm_bid is None:
+                mmmid_price = ((best_ask + best_bid) / 2
+                               if traderObject.get("squid_ink_last_price", None) is None
+                               else traderObject["squid_ink_last_price"])
             else:
                 mmmid_price = (mm_ask + mm_bid) / 2
 
-            if traderObject.get("squid_ink_last_price", None) != None:
-                last_price = traderObject["squid_ink_last_price"]
-                last_returns = (mmmid_price - last_price) / last_price
-                pred_returns = (
-                    last_returns * self.params[Product.SQUID_INK]["reversion_beta"]
-                )
-                fair = mmmid_price + (mmmid_price * pred_returns)
+            # Update history of mid prices for SQUID_INK
+            if "squid_ink_history" not in traderObject:
+                traderObject["squid_ink_history"] = []
+            traderObject["squid_ink_history"].append(mmmid_price)
+            window = self.params[Product.SQUID_INK].get("z_rolling_window", 20)
+            # Keep only the most recent 'window' values:
+            if len(traderObject["squid_ink_history"]) > window:
+                traderObject["squid_ink_history"] = traderObject["squid_ink_history"][-window:]
+            hist = traderObject["squid_ink_history"]
+
+            rolling_mean = np.mean(hist)
+            rolling_std = np.std(hist)
+            if rolling_std == 0:
+                rolling_std = 1e-6  # avoid division by zero
+            zscore = (mmmid_price - rolling_mean) / rolling_std
+
+            # Use z-score to adjust fair price if deviation is large
+            threshold = self.params[Product.SQUID_INK].get("zscore_threshold", 1.5)
+            reversion_beta = self.params[Product.SQUID_INK].get("reversion_beta", -0.3)
+            if abs(zscore) >= threshold:
+                # If price is above the rolling mean (zscore > threshold), we expect a downward reversion.
+                # If below (zscore < -threshold), we expect an upward reversion.
+                predicted_reversion = zscore * reversion_beta
+                fair = mmmid_price + (mmmid_price * predicted_reversion)
             else:
                 fair = mmmid_price
+
             traderObject["squid_ink_last_price"] = mmmid_price
             return fair
         return None

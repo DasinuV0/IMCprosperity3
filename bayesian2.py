@@ -5,14 +5,21 @@ from skopt.space import Real, Integer
 from skopt.utils import use_named_args
 import re
 
-ALGO_PATH = "Iteration4.py"
+ALGO_PATH = "Iteration5.py"
 PROFIT_LOG = "profit_log.txt"
 
 space = [
     Real(-1.0, 0.0, name="reversion_beta"),
-    Integer(0, 3, name="take_width"),
-    Integer(0, 3, name="clear_width"),
-    Integer(5, 25, name="adverse_volume")
+    Real(0, 3, name="take_width"),
+    Real(0, 3, name="clear_width"),
+    Integer(5, 25, name="adverse_volume"),
+
+    Real(5, 25, name="disregard_edge"),
+    Real(5, 25, name="join_edge"),
+    Real(5, 25, name="default_edge"),
+
+    Integer(5, 25, name="z_rolling_window"),
+    Real(0, 10, name="zscore_threshold"),
 ]
 
 # Objective function: we NEGATE profit because skopt does minimization
@@ -29,6 +36,11 @@ def objective(**params):
         f"--take_width", str(params["take_width"]),
         f"--clear_width", str(params["clear_width"]),
         f"--adverse_volume", str(params["adverse_volume"]),
+        f"--disregard_edge", str(params["disregard_edge"]),
+        f"--join_edge", str(params["join_edge"]),
+        f"--default_edge", str(params["default_edge"]),
+        f"--z_rolling_window", str(params["z_rolling_window"]),
+        f"--zscore_threshold", str(params["zscore_threshold"]),
     ]
 
     try:
@@ -63,7 +75,7 @@ result = gp_minimize(
 )
 
 print("\n Best Parameters:")
-for name, val in zip(["reversion_beta", "take_width", "clear_width", "adverse_volume"], result.x):
+for name, val in zip(["take_width","clear_width","prevent_adverse","adverse_volume","reversion_beta","disregard_edge","join_edge","default_edge","z_rolling_window","zscore_threshold"], result.x):
     print(f"  {name}: {val}")
 
 print(f"\n Best Total Profit: {-result.fun}")

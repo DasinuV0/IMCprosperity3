@@ -104,14 +104,14 @@ class Trader:
         self.params = params
 
         self.LIMIT = {
-            Product.RAINFOREST_RESIN: 45,
-            Product.SQUID_INK: 45,
-            Product.KELP: 45,
-            Product.CROISSANTS: 245,
-            Product.JAMS: 345,
-            Product.DJEMBES: 55,
-            Product.PICNIC_BASKET1: 55,
-            Product.PICNIC_BASKET2: 95
+            Product.RAINFOREST_RESIN: 50,
+            Product.SQUID_INK: 50,
+            Product.KELP: 50,
+            Product.CROISSANTS: 250,
+            Product.JAMS: 350,
+            Product.DJEMBES: 60,
+            Product.PICNIC_BASKET1: 60,
+            Product.PICNIC_BASKET2: 100,
         }
 
     def take_best_orders(
@@ -337,36 +337,6 @@ class Trader:
             basket_value += mid_price * quantity
             
         return basket_value
-    
-    def should_convert_basket(self, basket: str, state: TradingState) -> tuple[bool, int]:
-        """Determine if we should convert components to basket or vice versa"""
-        basket_value = self.calculate_basket_fair_value(basket, state)
-        if basket_value is None or basket not in state.order_depths:
-            return False, 0
-            
-        order_depth = state.order_depths[basket]
-        if not order_depth.buy_orders or not order_depth.sell_orders:
-            return False, 0
-            
-        basket_market_value = (max(order_depth.buy_orders.keys()) + min(order_depth.sell_orders.keys())) / 2
-        
-        # Check if we can profit from conversion in either direction
-        spread_threshold = 2  # Minimum profit per conversion
-        
-        # Convert components to basket
-        if basket_market_value > basket_value + spread_threshold:
-            max_conversion = float('inf')
-            for product, quantity in BASKET_COMPOSITIONS[basket].items():
-                position = state.position.get(product, 0)
-                max_conversion = min(max_conversion, position // quantity)
-            return True, int(max_conversion)
-        
-        # Convert basket to components    
-        if basket_value > basket_market_value + spread_threshold:
-            position = state.position.get(basket, 0)
-            return True, -int(position)
-            
-        return False, 0
 
     def take_orders(
         self,
@@ -571,6 +541,7 @@ class Trader:
                 return result
     
         return result
+    
     def get_synthetic_basket_order_depth(self, order_depths: Dict[str, OrderDepth], basket_type: str) -> OrderDepth:
         """Calculate synthetic order depth for a basket"""
         synthetic_depth = OrderDepth()
@@ -596,8 +567,10 @@ class Trader:
         implied_ask = sum(best_prices[p]['ask'] * q for p, q in components.items())
         
         # Calculate volumes
-        implied_bid_vol = min(best_prices[p]['bid_vol'] // q for p, q in components.items())
-        implied_ask_vol = min(best_prices[p]['ask_vol'] // q for p, q in components.items())
+
+        # taking the max is more risky but seems to yield better results
+        implied_bid_vol = max(best_prices[p]['bid_vol'] // q for p, q in components.items())
+        implied_ask_vol = max(best_prices[p]['ask_vol'] // q for p, q in components.items())
         
         if implied_bid_vol > 0:
             synthetic_depth.buy_orders[implied_bid] = implied_bid_vol

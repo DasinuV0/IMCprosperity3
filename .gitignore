@@ -1,0 +1,27 @@
+# Python bytecode
+__pycache__/
+round2/__pycache__/
+
+# Python files
+*.pyc
+
+# Pipenv files
+Pipfile
+Pipfile.lock
+
+# Specific Python files
+Iteration2\ copy.py
+iter4+zscore_for_ink\ copy.py
+datamodel.py
+round2/datamodel.py
+round2/iter2.py
+
+# Folders
+backtests/
+submissions/
+
+# Temporary files
+temp.txt
+
+# Jupyter Notebook
+test.ipynb

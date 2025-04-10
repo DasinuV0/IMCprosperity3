@@ -18,6 +18,11 @@ class Product:
     RAINFOREST_RESIN = "RAINFOREST_RESIN"
     SQUID_INK = "SQUID_INK"
     KELP = "KELP"
+    CROISSANTS = "CROISSANTS"
+    JAMS = "JAMS"
+    DJEMBES = "DJEMBES"
+    PICNIC_BASKET1 = "PICNIC_BASKET1"
+    PICNIC_BASKET2 = "PICNIC_BASKET2"
 
 PARAMS = {
     Product.RAINFOREST_RESIN: {
@@ -31,25 +36,74 @@ PARAMS = {
         "soft_position_limit": 10,
     },
     Product.SQUID_INK: {
-        "take_width": 1,
-        "clear_width": 0,
+        "take_width": 0.0,
+        "clear_width": 0.7989037527218122,
         "prevent_adverse": True,
-        "adverse_volume": 15,
-        "reversion_beta": -0.129,
-        "disregard_edge": 1,
-        "join_edge": 0,
-        "default_edge": 1,
+        "adverse_volume": 12,
+        "reversion_beta": -0.262018206155453,
+        "disregard_edge": 0.0,
+        "join_edge": 8.205011595727127,
+        "default_edge": 1.0,
+        "z_rolling_window": 5000,     # number of ticks to consider for the rolling average
+        "zscore_threshold": 3.1571449177636266,  # threshold for taking advantage of large swings
     },
     Product.KELP: {  # added KELP with similar settings as SQUID_INK
-        "take_width": 1,
-        "clear_width": 0,
+        "take_width": 3.0,
+        "clear_width": 0.0,
         "prevent_adverse": True,
-        "adverse_volume": 15,
-        "reversion_beta": -0.129,
+        "adverse_volume": 7,
+        "reversion_beta": -0.231709901360756,
+        "disregard_edge": 4.0,
+        "join_edge": -1.8535170129297578,
+        "default_edge": 1.0,
+    },
+    Product.CROISSANTS: {
+        "take_width": 1.0,
+        "clear_width": 0.5,
+        "prevent_adverse": True,
+        "adverse_volume": 10,
         "disregard_edge": 1,
-        "join_edge": 0,
+        "join_edge": 2,
         "default_edge": 1,
     },
+    Product.JAMS: {
+        "take_width": 1.0,
+        "clear_width": 0.5,
+        "prevent_adverse": True,
+        "adverse_volume": 10,
+        "disregard_edge": 1,
+        "join_edge": 2,
+        "default_edge": 1,
+    },
+    Product.DJEMBES: {
+        "take_width": 1.0,
+        "clear_width": 0.5,
+        "prevent_adverse": True,
+        "adverse_volume": 10,
+        "disregard_edge": 1,
+        "join_edge": 2,
+        "default_edge": 1,
+    },
+    Product.PICNIC_BASKET1: {
+        "spread_threshold": 10.0,
+        "max_trade_size": 11,
+    },
+    Product.PICNIC_BASKET2: {
+        "spread_threshold": 2,
+        "max_trade_size": 5,
+    }
+}
+
+BASKET_COMPOSITIONS = {
+    Product.PICNIC_BASKET1: {
+        Product.CROISSANTS: 6,
+        Product.JAMS: 3,
+        Product.DJEMBES: 1,
+    },
+    Product.PICNIC_BASKET2: {
+        Product.CROISSANTS: 4,
+        Product.JAMS: 2,
+    }
 }
 
 
@@ -226,17 +280,37 @@ def cli(
     algorithm: Annotated[Path, Argument(help="Path to the Python file containing the algorithm to backtest.", show_default=False, exists=True, file_okay=True, dir_okay=False, resolve_path=True)],
     days: Annotated[list[str], Argument(help="The days to backtest on. <round>-<day> for a single day, <round> for all days in a round.", show_default=False)],
     
-    reversion_beta: Annotated[Optional[float], Option("--reversion_beta", help="Custom reversion beta value.")] = -0.529,
-    take_width: Annotated[Optional[float], Option("--take_width", help="Custom take width value.")] = 1,
-    clear_width: Annotated[Optional[float], Option("--clear_width", help="Custom clear width value.")] = 0,
-    adverse_volume: Annotated[Optional[int], Option("--adverse_volume", help="Custom adverse volume.")] = 15,
-    
-    disregard_edge: Annotated[Optional[float], Option("--disregard_edge", help="Custom adverse volume.")] = 15,
-    join_edge: Annotated[Optional[float], Option("--join_edge", help="Custom adverse volume.")] = 15,
-    default_edge: Annotated[Optional[float], Option("--default_edge", help="Custom adverse volume.")] = 15,
-    
-    z_rolling_window: Annotated[Optional[int], Option("--z_rolling_window", help="Custom adverse volume.")] = 15,
-    zscore_threshold: Annotated[Optional[float], Option("--zscore_threshold", help="Custom adverse volume.")] = 15,
+    # Basket-level
+    PICNIC_BASKET1_spread_threshold: Annotated[Optional[float], Option("--PICNIC_BASKET1.spread_threshold")] = None,
+    PICNIC_BASKET1_max_trade_size: Annotated[Optional[int], Option("--PICNIC_BASKET1.max_trade_size")] = None,
+
+    PICNIC_BASKET2_spread_threshold: Annotated[Optional[float], Option("--PICNIC_BASKET2.spread_threshold")] = None,
+    PICNIC_BASKET2_max_trade_size: Annotated[Optional[int], Option("--PICNIC_BASKET2.max_trade_size")] = None,
+
+    # CROISSANTS
+    CROISSANTS_take_width: Annotated[Optional[float], Option("--CROISSANTS.take_width")] = None,
+    CROISSANTS_clear_width: Annotated[Optional[float], Option("--CROISSANTS.clear_width")] = None,
+    CROISSANTS_adverse_volume: Annotated[Optional[int], Option("--CROISSANTS.adverse_volume")] = None,
+    CROISSANTS_disregard_edge: Annotated[Optional[float], Option("--CROISSANTS.disregard_edge")] = None,
+    CROISSANTS_join_edge: Annotated[Optional[float], Option("--CROISSANTS.join_edge")] = None,
+    CROISSANTS_default_edge: Annotated[Optional[float], Option("--CROISSANTS.default_edge")] = None,
+
+    # JAMS
+    JAMS_take_width: Annotated[Optional[float], Option("--JAMS.take_width")] = None,
+    JAMS_clear_width: Annotated[Optional[float], Option("--JAMS.clear_width")] = None,
+    JAMS_adverse_volume: Annotated[Optional[int], Option("--JAMS.adverse_volume")] = None,
+    JAMS_disregard_edge: Annotated[Optional[float], Option("--JAMS.disregard_edge")] = None,
+    JAMS_join_edge: Annotated[Optional[float], Option("--JAMS.join_edge")] = None,
+    JAMS_default_edge: Annotated[Optional[float], Option("--JAMS.default_edge")] = None,
+
+    # DJEMBES
+    DJEMBES_take_width: Annotated[Optional[float], Option("--DJEMBES.take_width")] = None,
+    DJEMBES_clear_width: Annotated[Optional[float], Option("--DJEMBES.clear_width")] = None,
+    DJEMBES_adverse_volume: Annotated[Optional[int], Option("--DJEMBES.adverse_volume")] = None,
+    DJEMBES_disregard_edge: Annotated[Optional[float], Option("--DJEMBES.disregard_edge")] = None,
+    DJEMBES_join_edge: Annotated[Optional[float], Option("--DJEMBES.join_edge")] = None,
+    DJEMBES_default_edge: Annotated[Optional[float], Option("--DJEMBES.default_edge")] = None,
+
 
     merge_pnl: Annotated[bool, Option("--merge-pnl", help="Merge profit and loss across days.")] = False,
     vis: Annotated[bool, Option("--vis", help="Open backtest results in https://jmerle.github.io/imc-prosperity-3-visualizer/ when done.")] = False,
@@ -253,15 +327,61 @@ def cli(
         print("Error: --out and --no-out are mutually exclusive")
         sys.exit(1)
 
-    PARAMS[Product.SQUID_INK]["reversion_beta"] = reversion_beta
-    PARAMS[Product.SQUID_INK]["take_width"] = take_width
-    PARAMS[Product.SQUID_INK]["clear_width"] = clear_width
-    PARAMS[Product.SQUID_INK]["adverse_volume"] = adverse_volume
-    PARAMS[Product.SQUID_INK]["disregard_edge"] = disregard_edge
-    PARAMS[Product.SQUID_INK]["join_edge"] = join_edge
-    PARAMS[Product.SQUID_INK]["default_edge"] = default_edge
-    PARAMS[Product.SQUID_INK]["z_rolling_window"] = z_rolling_window
-    PARAMS[Product.SQUID_INK]["zscore_threshold"] = zscore_threshold
+    # Basket 1
+    if PICNIC_BASKET1_spread_threshold is not None:
+        PARAMS[Product.PICNIC_BASKET1]["spread_threshold"] = PICNIC_BASKET1_spread_threshold
+    if PICNIC_BASKET1_max_trade_size is not None:
+        PARAMS[Product.PICNIC_BASKET1]["max_trade_size"] = PICNIC_BASKET1_max_trade_size
+
+    # Basket 2
+    if PICNIC_BASKET2_spread_threshold is not None:
+        PARAMS[Product.PICNIC_BASKET2]["spread_threshold"] = PICNIC_BASKET2_spread_threshold
+    if PICNIC_BASKET2_max_trade_size is not None:
+        PARAMS[Product.PICNIC_BASKET2]["max_trade_size"] = PICNIC_BASKET2_max_trade_size
+
+    # CROISSANTS
+    if CROISSANTS_take_width is not None:
+        PARAMS[Product.CROISSANTS]["take_width"] = CROISSANTS_take_width
+    if CROISSANTS_clear_width is not None:
+        PARAMS[Product.CROISSANTS]["clear_width"] = CROISSANTS_clear_width
+    if CROISSANTS_adverse_volume is not None:
+        PARAMS[Product.CROISSANTS]["adverse_volume"] = CROISSANTS_adverse_volume
+    if CROISSANTS_disregard_edge is not None:
+        PARAMS[Product.CROISSANTS]["disregard_edge"] = CROISSANTS_disregard_edge
+    if CROISSANTS_join_edge is not None:
+        PARAMS[Product.CROISSANTS]["join_edge"] = CROISSANTS_join_edge
+    if CROISSANTS_default_edge is not None:
+        PARAMS[Product.CROISSANTS]["default_edge"] = CROISSANTS_default_edge
+
+    # JAMS
+    if JAMS_take_width is not None:
+        PARAMS[Product.JAMS]["take_width"] = JAMS_take_width
+    if JAMS_clear_width is not None:
+        PARAMS[Product.JAMS]["clear_width"] = JAMS_clear_width
+    if JAMS_adverse_volume is not None:
+        PARAMS[Product.JAMS]["adverse_volume"] = JAMS_adverse_volume
+    if JAMS_disregard_edge is not None:
+        PARAMS[Product.JAMS]["disregard_edge"] = JAMS_disregard_edge
+    if JAMS_join_edge is not None:
+        PARAMS[Product.JAMS]["join_edge"] = JAMS_join_edge
+    if JAMS_default_edge is not None:
+        PARAMS[Product.JAMS]["default_edge"] = JAMS_default_edge
+
+    # DJEMBES
+    if DJEMBES_take_width is not None:
+        PARAMS[Product.DJEMBES]["take_width"] = DJEMBES_take_width
+    if DJEMBES_clear_width is not None:
+        PARAMS[Product.DJEMBES]["clear_width"] = DJEMBES_clear_width
+    if DJEMBES_adverse_volume is not None:
+        PARAMS[Product.DJEMBES]["adverse_volume"] = DJEMBES_adverse_volume
+    if DJEMBES_disregard_edge is not None:
+        PARAMS[Product.DJEMBES]["disregard_edge"] = DJEMBES_disregard_edge
+    if DJEMBES_join_edge is not None:
+        PARAMS[Product.DJEMBES]["join_edge"] = DJEMBES_join_edge
+    if DJEMBES_default_edge is not None:
+        PARAMS[Product.DJEMBES]["default_edge"] = DJEMBES_default_edge
+
+
 
     try:
         trader_module = parse_algorithm(algorithm)

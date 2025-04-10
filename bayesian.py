@@ -6,7 +6,7 @@ from skopt.utils import use_named_args
 import re
 
 ALGO_PATH = "round2/iter1.py"
-PROFIT_LOG = "profit_log2.txt"
+PROFIT_LOG = "profit_log.txt"
 
 space = [
     ## Old Parameters for round 1
@@ -134,7 +134,7 @@ def objective(**params):
             return -profit  # Negate for maximization
         
     except Exception as e:
-        print(f"Error during run: {e}")
+        print(f"Error during run: {e} with parms :{str(params)}")
         return 1e9  # Penalize failed runs
 
 result = gp_minimize(

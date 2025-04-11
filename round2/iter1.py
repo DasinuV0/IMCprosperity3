@@ -76,11 +76,11 @@ PARAMS = {
         "default_edge": 1,
     },
     Product.PICNIC_BASKET1: {
-        "spread_threshold": 2,
-        "max_trade_size": 5,
+        "spread_threshold": 10,
+        "max_trade_size": 15,
     },
     Product.PICNIC_BASKET2: {
-        "spread_threshold": 2,
+        "spread_threshold": 5,
         "max_trade_size": 5,
     }
 }

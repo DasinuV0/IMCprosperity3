@@ -80,8 +80,8 @@ PARAMS = {
         "max_trade_size": 15,
     },
     Product.PICNIC_BASKET2: {
-        "spread_threshold": 5,
-        "max_trade_size": 5,
+        "spread_threshold": 20,
+        "max_trade_size": 15,
     }
 }
 
@@ -746,7 +746,7 @@ class Trader:
                 # Calculate fair value as mid price
                 order_depth = state.order_depths[product]
                 if order_depth.buy_orders and order_depth.sell_orders:
-                    fair_value = (max(order_depth.buy_orders.keys()) + min(order_depth.sell_orders.keys())) / 2
+                    fair_value = self.get_swmid(order_depth)
                     
                     # Take orders
                     product_take_orders, buy_order_volume, sell_order_volume = self.take_orders(

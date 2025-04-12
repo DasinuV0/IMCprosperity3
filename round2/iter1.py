@@ -597,6 +597,136 @@ class Trader:
         except (ValueError, KeyError):
             return None
 
+    def execute_basket_to_basket_arbitrage(self, state: TradingState) -> Dict[str, List[Order]]:
+        """Execute arbitrage between PICNIC_BASKET1 and PICNIC_BASKET2"""
+        result = {
+            Product.PICNIC_BASKET1: [],
+            Product.PICNIC_BASKET2: [],
+            Product.CROISSANTS: [],
+            Product.JAMS: [],
+            Product.DJEMBES: []
+        }
+        
+        # Check if both baskets exist in order depths
+        if (Product.PICNIC_BASKET1 not in state.order_depths or 
+            Product.PICNIC_BASKET2 not in state.order_depths):
+            return result
+            
+        pb1_depth = state.order_depths[Product.PICNIC_BASKET1]
+        pb2_depth = state.order_depths[Product.PICNIC_BASKET2]
+        
+        # Verify basket order depths have orders
+        if (not pb1_depth.buy_orders or not pb1_depth.sell_orders or
+            not pb2_depth.buy_orders or not pb2_depth.sell_orders):
+            return result
+        
+        # Calculate the theoretical relationship between the baskets
+        # PB1 = 6 CROISSANTS + 3 JAMS + 1 DJEMBE
+        # PB2 = 4 CROISSANTS + 2 JAMS
+        # Therefore, 3 PB2 + 3 DJEMBE = 2 PB1 (ignoring transaction costs)
+        
+        # Get best bid/ask for each basket
+        pb1_best_bid = max(pb1_depth.buy_orders.keys())
+        pb1_best_ask = min(pb1_depth.sell_orders.keys())
+        pb2_best_bid = max(pb2_depth.buy_orders.keys())
+        pb2_best_ask = min(pb2_depth.sell_orders.keys())
+        
+        # Get positions
+        pb1_position = state.position.get(Product.PICNIC_BASKET1, 0)
+        pb2_position = state.position.get(Product.PICNIC_BASKET2, 0)
+        djembe_position = state.position.get(Product.DJEMBES, 0)
+        
+        # Check if DJEMBE is available for trading
+        if Product.DJEMBES not in state.order_depths:
+            return result
+            
+        djembe_depth = state.order_depths[Product.DJEMBES]
+        if not djembe_depth.buy_orders or not djembe_depth.sell_orders:
+            return result
+            
+        djembe_best_bid = max(djembe_depth.buy_orders.keys())
+        djembe_best_ask = min(djembe_depth.sell_orders.keys())
+        
+        # Define arbitrage thresholds
+        arb_threshold = 5  # Minimum profit required to execute arbitrage
+        max_trade_size = 10  # Maximum trade size for arbitrage
+        
+        # Arbitrage opportunity 1: 
+        # Buy 2 PB1, sell 3 PB2 + 3 DJEMBE
+        spread1 = (3 * pb2_best_bid + 3 * djembe_best_bid) - (2 * pb1_best_ask)
+        
+        if spread1 > arb_threshold:
+            # Calculate trade size
+            max_pb1_buy = min(abs(pb1_depth.sell_orders[pb1_best_ask]), 
+                             (self.LIMIT[Product.PICNIC_BASKET1] - pb1_position) // 2)
+            max_pb2_sell = min(abs(pb2_depth.buy_orders[pb2_best_bid]), 
+                              (self.LIMIT[Product.PICNIC_BASKET2] + pb2_position) // 3)
+            max_djembe_sell = min(abs(djembe_depth.buy_orders[djembe_best_bid]), 
+                                (self.LIMIT[Product.DJEMBES] + djembe_position) // 3)
+            
+            trade_size = min(max_pb1_buy, max_pb2_sell, max_djembe_sell, max_trade_size)
+            
+            if trade_size > 0:
+                # Buy 2*trade_size PB1
+                result[Product.PICNIC_BASKET1].append(Order(
+                    Product.PICNIC_BASKET1, 
+                    pb1_best_ask,
+                    2 * trade_size
+                ))
+                
+                # Sell 3*trade_size PB2
+                result[Product.PICNIC_BASKET2].append(Order(
+                    Product.PICNIC_BASKET2,
+                    pb2_best_bid,
+                    -3 * trade_size
+                ))
+                
+                # Sell 3*trade_size DJEMBE
+                result[Product.DJEMBES].append(Order(
+                    Product.DJEMBES,
+                    djembe_best_bid,
+                    -3 * trade_size
+                ))
+        
+        # Arbitrage opportunity 2:
+        # Buy 3 PB2 + 3 DJEMBE, sell 2 PB1
+        spread2 = (2 * pb1_best_bid) - (3 * pb2_best_ask + 3 * djembe_best_ask)
+        
+        if spread2 > arb_threshold:
+            # Calculate trade size
+            max_pb1_sell = min(abs(pb1_depth.buy_orders[pb1_best_bid]), 
+                              (self.LIMIT[Product.PICNIC_BASKET1] + pb1_position) // 2)
+            max_pb2_buy = min(abs(pb2_depth.sell_orders[pb2_best_ask]), 
+                             (self.LIMIT[Product.PICNIC_BASKET2] - pb2_position) // 3)
+            max_djembe_buy = min(abs(djembe_depth.sell_orders[djembe_best_ask]), 
+                               (self.LIMIT[Product.DJEMBES] - djembe_position) // 3)
+            
+            trade_size = min(max_pb1_sell, max_pb2_buy, max_djembe_buy, max_trade_size)
+            
+            if trade_size > 0:
+                # Sell 2*trade_size PB1
+                result[Product.PICNIC_BASKET1].append(Order(
+                    Product.PICNIC_BASKET1,
+                    pb1_best_bid,
+                    -2 * trade_size
+                ))
+                
+                # Buy 3*trade_size PB2
+                result[Product.PICNIC_BASKET2].append(Order(
+                    Product.PICNIC_BASKET2,
+                    pb2_best_ask,
+                    3 * trade_size
+                ))
+                
+                # Buy 3*trade_size DJEMBE
+                result[Product.DJEMBES].append(Order(
+                    Product.DJEMBES,
+                    djembe_best_ask,
+                    3 * trade_size
+                ))
+        
+        return result
+
     def run(self, state: TradingState):
         traderObject = {}
         if state.traderData != None and state.traderData != "":
@@ -739,8 +869,22 @@ class Trader:
                 kelp_take_orders + kelp_clear_orders + kelp_make_orders
             )
 
+        # Execute basket-to-basket arbitrage first (priority)
+        basket_to_basket_orders = self.execute_basket_to_basket_arbitrage(state)
+        
+        # Add basket-to-basket arbitrage orders to result
+        for product, orders in basket_to_basket_orders.items():
+            if orders:
+                if product not in result:
+                    result[product] = []
+                result[product].extend(orders)
+
+        # Get products that already have arbitrage orders
+        products_with_arb_orders = {product for product, orders in basket_to_basket_orders.items() if orders}
+
+        # Process individual components only if they don't have arbitrage orders
         for product in [Product.CROISSANTS, Product.JAMS, Product.DJEMBES]:
-            if product in state.order_depths:
+            if product in state.order_depths and product not in products_with_arb_orders:
                 position = state.position.get(product, 0)
                 
                 # Calculate fair value as mid price
@@ -783,10 +927,13 @@ class Trader:
                         self.params[product]["default_edge"],
                     )
                     
-                    result[product] = product_take_orders + product_clear_orders + product_make_orders
+                    if product not in result:
+                        result[product] = []
+                    result[product].extend(product_take_orders + product_clear_orders + product_make_orders)
 
+        # Regular basket arbitrage for baskets not involved in basket-to-basket arbitrage
         for basket in [Product.PICNIC_BASKET1, Product.PICNIC_BASKET2]:
-            if basket in state.order_depths:
+            if basket in state.order_depths and basket not in products_with_arb_orders:
                 basket_position = state.position.get(basket, 0)
                 
                 # Execute basket arbitrage
@@ -798,7 +945,7 @@ class Trader:
                 
                 # Add orders to result
                 for product, orders in basket_orders.items():
-                    if orders:
+                    if orders and product not in products_with_arb_orders:
                         if product not in result:
                             result[product] = []
                         result[product].extend(orders)

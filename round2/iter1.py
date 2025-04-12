@@ -76,12 +76,12 @@ PARAMS = {
         "default_edge": 1,
     },
     Product.PICNIC_BASKET1: {
-        "spread_threshold": 10,
-        "max_trade_size": 15,
+        "spread_threshold": 50,
+        "max_trade_size": 40,
     },
     Product.PICNIC_BASKET2: {
-        "spread_threshold": 20,
-        "max_trade_size": 15,
+        "spread_threshold": 50,
+        "max_trade_size": 40,
     }
 }
 
@@ -230,8 +230,6 @@ class Trader:
 
     def squid_ink_fair_value(self, order_depth: OrderDepth, traderObject) -> float:
         if len(order_depth.sell_orders) != 0 and len(order_depth.buy_orders) != 0:
-            best_ask = min(order_depth.sell_orders.keys())
-            best_bid = max(order_depth.buy_orders.keys())
             filtered_ask = [
                 price for price in order_depth.sell_orders.keys()
                 if abs(order_depth.sell_orders[price]) >= self.params[Product.SQUID_INK]["adverse_volume"]
@@ -243,7 +241,7 @@ class Trader:
             mm_ask = min(filtered_ask) if filtered_ask else None
             mm_bid = max(filtered_bid) if filtered_bid else None
             if mm_ask is None or mm_bid is None:
-                mmmid_price = ((best_ask + best_bid) / 2
+                mmmid_price = (self.get_swmid(order_depth)
                                if traderObject.get("squid_ink_last_price", None) is None
                                else traderObject["squid_ink_last_price"])
             else:
@@ -282,8 +280,6 @@ class Trader:
 
     def kelp_fair_value(self, order_depth: OrderDepth, traderObject) -> float:
         if len(order_depth.sell_orders) != 0 and len(order_depth.buy_orders) != 0:
-            best_ask = min(order_depth.sell_orders.keys())
-            best_bid = max(order_depth.buy_orders.keys())
             filtered_ask = [
                 price
                 for price in order_depth.sell_orders.keys()
@@ -300,7 +296,7 @@ class Trader:
             mm_bid = max(filtered_bid) if len(filtered_bid) > 0 else None
             if mm_ask == None or mm_bid == None:
                 if traderObject.get("kelp_last_price", None) == None:
-                    mmmid_price = (best_ask + best_bid) / 2
+                    mmmid_price = self.get_swmid(order_depth)
                 else:
                     mmmid_price = traderObject["kelp_last_price"]
             else:
@@ -333,7 +329,7 @@ class Trader:
             if not order_depth.buy_orders or not order_depth.sell_orders:
                 return None
                 
-            mid_price = (max(order_depth.buy_orders.keys()) + min(order_depth.sell_orders.keys())) / 2
+            mid_price = self.get_swmid(order_depth)
             basket_value += mid_price * quantity
             
         return basket_value
